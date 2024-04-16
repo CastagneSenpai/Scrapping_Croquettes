@@ -16,11 +16,32 @@ def get_page_content(url):
         print("Échec de la requête à l'URL :", url)
         return None
 
-def get_price_element(soup):
+def get_fixed_price_element(url):
+    pageContent = get_page_content(url)
+    soup = BeautifulSoup(pageContent, 'lxml')
     return soup.find('span', id="our_price_display")
 
-def announce_price(nom, title, dynamic_price, fixed_price):
-    return f"Le prix du produit \"{title}\" pour {nom} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
+
+def get_dynamic_price_element(url):
+    # Chromedriver parameters to make silent requests
+    options = Options()
+    options.add_argument("--log-level=3")
+    options.add_argument("--silent") 
+    options.add_argument('headless')
+    options.add_argument('window-size=1920x1080')
+    options.add_argument("disable-gpu")
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    
+    driver = webdriver.Chrome(options=options) 
+    driver.get(url)
+    pageContent = driver.page_source
+    driver.quit()
+
+    soup = BeautifulSoup(pageContent, 'lxml')
+    return soup.find('span', id="our_price_display")
+
+def announce_price(nom, dynamic_price, fixed_price):
+    return f"Le double pack de croquette de {nom} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
 
 def historical_price(dogName, url, price, historicalPriceFile):
     if os.path.exists(historicalPriceFile):
@@ -36,71 +57,36 @@ def historical_price(dogName, url, price, historicalPriceFile):
             fichier_html.write(datetime.now().strftime("%Y/%m/%dT%H:%M:%S") + ',' + dogName + ',' + url + ',' + price +'\n')
 
 def display_prices(csv_file_path):
-    # Charger le fichier CSV dans un DataFrame pandas
     df = pd.read_csv(csv_file_path, header=None, names=['Date', 'Chien', 'URL', 'Prix'])
-
-    # Convertir la colonne 'Date' en format datetime
     df['Date'] = pd.to_datetime(df['Date'])
-
-    # Extraire les noms des chiens uniques
-    #df = df.sort_values(by=['Date'])
     chiens = df['Chien'].unique()
 
-    # Tracer la courbe des prix pour chaque chien
     for chien in chiens:
         df_chien = df[df['Chien'] == chien]
-        df_chien = df_chien.sort_values(by='Date')
         plt.plot(df_chien['Date'], df_chien['Prix'], label=chien)
     
-    # Ajouter des légendes et des titres
     plt.xlabel('Date')
     plt.ylabel('Prix (€)')
     plt.title('Évolution des prix des croquettes par chien')
     plt.legend()
     plt.grid(True)
-
-    # Afficher le graphique
     plt.show()
 
 
 def main():
     os.system('cls')
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    historicalPriceFile = os.path.join(current_directory, "prix_croquettes.csv")
     petsonic_urls = {
         "Randy": "https://www.petsonic.fr/croquettes-orijen-original-pour-chiens-114kg-pack-economique-x2.html",
         "Garry": "https://www.petsonic.fr/croquettes-orijen-senior-pour-chiens-114kg-pack-economique-x2.html"
     }
 
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    historicalPriceFile = os.path.join(current_directory, "prix_croquettes.csv")
-
-    for name, url in petsonic_urls.items():
-        page_content = get_page_content(url)
-        if page_content:
-            soup = BeautifulSoup(page_content, 'lxml')
-            fixed_price_element = get_price_element(soup)
-
-            options = Options()
-            options.add_argument("--log-level=3")
-            options.add_argument("--silent")  # Désactiver les messages de Chrome
-            options.add_argument('headless')
-            options.add_argument('window-size=1920x1080')
-            options.add_argument("disable-gpu")
-            options.add_experimental_option('excludeSwitches', ['enable-logging'])
-            driver = webdriver.Chrome(options=options) 
-            driver.get(url)
-            page_content = driver.page_source
-            driver.quit()
-
-            soup = BeautifulSoup(page_content, 'lxml')
-            dynamic_price_element = get_price_element(soup)
-            
-            #card_price = get_card_price(driver)
-            phrase_annonce_du_prix = announce_price(name, soup.title.string, dynamic_price_element.text, fixed_price_element.text)
-            print(phrase_annonce_du_prix)
-
-            if fixed_price_element and dynamic_price_element:
-                historical_price(name, url, dynamic_price_element.text, historicalPriceFile)
-            
+    for dogname, url in petsonic_urls.items():
+        fixed_price_element = get_fixed_price_element(url)
+        dynamic_price_element = get_dynamic_price_element(url)
+        print(announce_price(dogname, dynamic_price_element.text, fixed_price_element.text))
+        historical_price(dogname, url, dynamic_price_element.text, historicalPriceFile)            
     display_prices(historicalPriceFile)
 
 if __name__ == "__main__":
