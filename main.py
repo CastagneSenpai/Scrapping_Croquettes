@@ -1,12 +1,12 @@
 import os
 import requests
 import csv
+import pandas as pd
+import matplotlib.pyplot as plt
 from datetime import datetime
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import pandas as pd
-import matplotlib.pyplot as plt
 
 # Function that return the text of an URL.
 def get_page_content(url):
@@ -78,22 +78,37 @@ def display_prices(csv_file_path):
 
 
 
-############################# MAIN program #############################
+############################# Start of MAIN program #############################
 def main():
+    # Clear the console
     os.system('cls')
+
+    # Get the localization of the script, the "prix_croquettes.csv" file will be created in the same repository.
     current_directory = os.path.dirname(os.path.abspath(__file__))
     historicalPriceFile = os.path.join(current_directory, "prix_croquettes.csv")
+
+    # Define for your dogs his name and the link you want to scrap.
     petsonic_urls = {
         "Randy": "https://www.petsonic.fr/croquettes-orijen-original-pour-chiens-114kg-pack-economique-x2.html",
         "Garry": "https://www.petsonic.fr/croquettes-orijen-senior-pour-chiens-114kg-pack-economique-x2.html"
     }
 
+    # For each dog (Randy and Garry).
     for dogname, url in petsonic_urls.items():
+
+        # Calculate the static and the dynamic prices of the current dog food, before and after javascript execution of the page.
         fixed_price_element = get_fixed_price_element(url)
         dynamic_price_element = get_dynamic_price_element(url)
+
+        # Print the price of the current dog.
         print(announce_price(dogname, dynamic_price_element.text, fixed_price_element.text))
+
+        # Historize the price if it's a new day or if price have changed from last execution in .CSV file.
         historical_price(dogname, url, dynamic_price_element.text, historicalPriceFile)            
+    
+    # Display a plot graph of the evolution of price for each dog.
     display_prices(historicalPriceFile)
+############################# End of MAIN program #############################
 
 
 # Call the main method properly
