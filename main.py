@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+
 # Function that return the text of an URL.
 def get_page_content(url):
     response = requests.get(url)
@@ -17,11 +18,13 @@ def get_page_content(url):
         print("Échec de la requête à l'URL :", url)
         return None
 
+
 # Function that return the price in HTML tag "our_price_display" from an URL.
 def get_fixed_price_element(url):
     pageContent = get_page_content(url)
     soup = BeautifulSoup(pageContent, 'lxml')
     return soup.find('span', id="our_price_display")
+
 
 # Function that return the price in HTML tag "our_price_display" from an URL after javascript execution.
 def get_dynamic_price_element(url):
@@ -41,9 +44,11 @@ def get_dynamic_price_element(url):
     soup = BeautifulSoup(pageContent, 'lxml')
     return soup.find('span', id="our_price_display")
 
+
 # Function that announce the dynamic & static prices in french for a dog name.
 def announce_price(dogname, dynamic_price, fixed_price):
     return f"Le double pack de croquette de {dogname} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
+
 
 # Function that open the historical price stored in historicalPriceFile, and check if the new dynamic price have to be stored or not.
 def historical_price(dogName, url, price, historicalPriceFile):
@@ -59,15 +64,17 @@ def historical_price(dogName, url, price, historicalPriceFile):
         with open(historicalPriceFile, 'a', encoding='utf-8') as fichier_html:
             fichier_html.write(datetime.now().strftime("%Y/%m/%dT%H:%M:%S") + ',' + dogName + ',' + url + ',' + price +'\n')
 
+
 # Function that create of plot display based on historical price file
 def display_prices(csv_file_path):
     df = pd.read_csv(csv_file_path, header=None, names=['Date', 'Chien', 'URL', 'Prix'])
     df['Date'] = pd.to_datetime(df['Date'])
+    
     chiens = df['Chien'].unique()
-
     for chien in chiens:
         df_chien = df[df['Chien'] == chien]
-        plt.plot(df_chien['Date'], df_chien['Prix'], label=chien)
+        Prix = df_chien['Prix'].str.replace(' €', '').astype(float)
+        plt.plot(df_chien['Date'], Prix, label=chien)
     
     plt.xlabel('Date')
     plt.ylabel('Prix (€)')
@@ -80,7 +87,7 @@ def display_prices(csv_file_path):
 
 ############################# Start of MAIN program #############################
 def main():
-    # Clear the console
+    # Clear the console.
     os.system('cls')
 
     # Get the localization of the script, the "prix_croquettes.csv" file will be created in the same repository.
