@@ -22,23 +22,18 @@ def get_price_element(soup):
 def announce_price(nom, title, dynamic_price, fixed_price):
     return f"Le prix du produit \"{title}\" pour {nom} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
 
-def historical_price(dogName, url, price):
-    if os.path.exists("E:\\_dev\\Scrapping\\prix_croquettes.csv"):
-        with open("E:\\_dev\\Scrapping\\prix_croquettes.csv", "r", encoding='utf-8') as csvfile:
+def historical_price(dogName, url, price, historicalPriceFile):
+    if os.path.exists(historicalPriceFile):
+        with open(historicalPriceFile, "r", encoding='utf-8') as csvfile:
             hasToWrite = True
             for row in reversed(list(csv.reader(csvfile))):
                 if (row[1] == dogName and row[3] == price and datetime.strptime(row[0], "%Y/%m/%dT%H:%M:%S").date() == datetime.now().date()): 
                     hasToWrite = False
                 
-    if not os.path.exists("E:\\_dev\\Scrapping\\prix_croquettes.csv") or hasToWrite:
+    if not os.path.exists(historicalPriceFile) or hasToWrite:
         print(f"Mise à jour du fichier pour {dogName}.")
-        with open(f'E:\\_dev\\Scrapping\\prix_croquettes.csv', 'a', encoding='utf-8') as fichier_html:
+        with open(historicalPriceFile, 'a', encoding='utf-8') as fichier_html:
             fichier_html.write(datetime.now().strftime("%Y/%m/%dT%H:%M:%S") + ',' + dogName + ',' + url + ',' + price +'\n')
-
-#def get_card_price(driver):
-#    add_to_cart_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[@type='submit' and @name='Submit' and contains(@class, 'btn btn-default btn-primary exclusive') and contains(]")))
-#    add_to_cart_button.click()
-#    cart_link = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@href, '/cart')]")))
 
 def display_prices(csv_file_path):
     # Charger le fichier CSV dans un DataFrame pandas
@@ -75,35 +70,38 @@ def main():
         "Garry": "https://www.petsonic.fr/croquettes-orijen-senior-pour-chiens-114kg-pack-economique-x2.html"
     }
 
-    # for name, url in petsonic_urls.items():
-    #     page_content = get_page_content(url)
-    #     if page_content:
-    #         soup = BeautifulSoup(page_content, 'lxml')
-    #         fixed_price_element = get_price_element(soup)
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    historicalPriceFile = os.path.join(current_directory, "prix_croquettes.csv")
 
-    #         options = Options()
-    #         options.add_argument("--log-level=3")
-    #         options.add_argument("--silent")  # Désactiver les messages de Chrome
-    #         options.add_argument('headless')
-    #         options.add_argument('window-size=1920x1080')
-    #         options.add_argument("disable-gpu")
-    #         options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    #         driver = webdriver.Chrome(options=options) 
-    #         driver.get(url)
-    #         page_content = driver.page_source
-    #         driver.quit()
+    for name, url in petsonic_urls.items():
+        page_content = get_page_content(url)
+        if page_content:
+            soup = BeautifulSoup(page_content, 'lxml')
+            fixed_price_element = get_price_element(soup)
 
-    #         soup = BeautifulSoup(page_content, 'lxml')
-    #         dynamic_price_element = get_price_element(soup)
+            options = Options()
+            options.add_argument("--log-level=3")
+            options.add_argument("--silent")  # Désactiver les messages de Chrome
+            options.add_argument('headless')
+            options.add_argument('window-size=1920x1080')
+            options.add_argument("disable-gpu")
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            driver = webdriver.Chrome(options=options) 
+            driver.get(url)
+            page_content = driver.page_source
+            driver.quit()
+
+            soup = BeautifulSoup(page_content, 'lxml')
+            dynamic_price_element = get_price_element(soup)
             
-    #         #card_price = get_card_price(driver)
-    #         phrase_annonce_du_prix = announce_price(name, soup.title.string, dynamic_price_element.text, fixed_price_element.text)
-    #         print(phrase_annonce_du_prix)
+            #card_price = get_card_price(driver)
+            phrase_annonce_du_prix = announce_price(name, soup.title.string, dynamic_price_element.text, fixed_price_element.text)
+            print(phrase_annonce_du_prix)
 
-    #         if fixed_price_element and dynamic_price_element:
-    #             historical_price(name, url, dynamic_price_element.text) #card_price)
+            if fixed_price_element and dynamic_price_element:
+                historical_price(name, url, dynamic_price_element.text, historicalPriceFile)
             
-    display_prices("E:\\_dev\\Scrapping\\prix_croquettes.csv")
+    display_prices(historicalPriceFile)
 
 if __name__ == "__main__":
     main()
