@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Function that return the text of an URL.
 def get_page_content(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -16,14 +17,14 @@ def get_page_content(url):
         print("Échec de la requête à l'URL :", url)
         return None
 
+# Function that return the price in HTML tag "our_price_display" from an URL.
 def get_fixed_price_element(url):
     pageContent = get_page_content(url)
     soup = BeautifulSoup(pageContent, 'lxml')
     return soup.find('span', id="our_price_display")
 
-
+# Function that return the price in HTML tag "our_price_display" from an URL after javascript execution.
 def get_dynamic_price_element(url):
-    # Chromedriver parameters to make silent requests
     options = Options()
     options.add_argument("--log-level=3")
     options.add_argument("--silent") 
@@ -40,9 +41,11 @@ def get_dynamic_price_element(url):
     soup = BeautifulSoup(pageContent, 'lxml')
     return soup.find('span', id="our_price_display")
 
-def announce_price(nom, dynamic_price, fixed_price):
-    return f"Le double pack de croquette de {nom} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
+# Function that announce the dynamic & static prices in french for a dog name.
+def announce_price(dogname, dynamic_price, fixed_price):
+    return f"Le double pack de croquette de {dogname} est actuellement de {dynamic_price} ({fixed_price} avant rafraîchissement)."
 
+# Function that open the historical price stored in historicalPriceFile, and check if the new dynamic price have to be stored or not.
 def historical_price(dogName, url, price, historicalPriceFile):
     if os.path.exists(historicalPriceFile):
         with open(historicalPriceFile, "r", encoding='utf-8') as csvfile:
@@ -56,6 +59,7 @@ def historical_price(dogName, url, price, historicalPriceFile):
         with open(historicalPriceFile, 'a', encoding='utf-8') as fichier_html:
             fichier_html.write(datetime.now().strftime("%Y/%m/%dT%H:%M:%S") + ',' + dogName + ',' + url + ',' + price +'\n')
 
+# Function that create of plot display based on historical price file
 def display_prices(csv_file_path):
     df = pd.read_csv(csv_file_path, header=None, names=['Date', 'Chien', 'URL', 'Prix'])
     df['Date'] = pd.to_datetime(df['Date'])
@@ -73,6 +77,8 @@ def display_prices(csv_file_path):
     plt.show()
 
 
+
+############################# MAIN program #############################
 def main():
     os.system('cls')
     current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -89,5 +95,7 @@ def main():
         historical_price(dogname, url, dynamic_price_element.text, historicalPriceFile)            
     display_prices(historicalPriceFile)
 
+
+# Call the main method properly
 if __name__ == "__main__":
     main()
