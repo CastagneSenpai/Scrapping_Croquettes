@@ -26,3 +26,6 @@ Pour exécuter le script, utilisez la commande suivante dans votre terminal, en 
 ```
 python.exe <path_to_python_main.py>
 ```
+
+## Contributeurs
+- Romain CASTAGNÉ - https://github.com/CastagneSenpai
